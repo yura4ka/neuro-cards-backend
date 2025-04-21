@@ -126,6 +126,7 @@ def create_cards_table() -> None:
             server_default=sa.text("NOW()"),
         ),
         sa.Column("question", sa.Text, nullable=False),
+        sa.Column("difficulty", postgresql.SMALLINT, nullable=False),
         sa.Column(
             "deck_id",
             postgresql.UUID(as_uuid=True),
