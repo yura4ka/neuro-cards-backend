@@ -275,6 +275,7 @@ def create_tokens_table() -> None:
             server_default=sa.text("gen_random_uuid()"),
         ),
         sa.Column("expires_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("token", sa.Text, nullable=False),
         sa.Column(
             "user_id",
             postgresql.UUID(as_uuid=True),

@@ -1,6 +1,6 @@
 from uuid import UUID
 from databases import Database
-from app.models.users import CreateUserRequest, UserModel
+from app.models.user import CreateUserRequest, LoginRequest, UserModel
 from app.repositories.base import BaseRepository
 from app.services import auth_service
 import sqlalchemy as sa
@@ -11,9 +11,9 @@ class UserRepository(BaseRepository):
         super().__init__(db)
         self.auth_service = auth_service
 
-    async def get_user_by_email(self, email: str) -> UserModel | None:
+    async def get_user_by_username(self, username: str) -> UserModel | None:
         user = await self.db.fetch_one(
-            sa.select(UserModel).where(UserModel.email == email)
+            sa.select(UserModel).where(UserModel.username == username)
         )
         if not user:
             return None
@@ -32,3 +32,15 @@ class UserRepository(BaseRepository):
             ),
         )
         return result.id
+
+    async def authenticate_user(self, *, request: LoginRequest) -> UserModel | None:
+        user = await self.get_user_by_username(username=request.username)
+        if not user:
+            return None
+
+        if not self.auth_service.verify_password(
+            plain_password=request.password, hashed_password=user.password
+        ):
+            return None
+
+        return user

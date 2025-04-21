@@ -26,3 +26,8 @@ class CreateUserRequest(CoreModel):
         if self.password != self.confirm_password:
             raise ValueError("Passwords do not match")
         return self
+
+
+class LoginRequest(CoreModel):
+    username: str
+    password: str
