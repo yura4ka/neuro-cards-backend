@@ -4,10 +4,13 @@ from pydantic import Field, EmailStr, model_validator
 from app.models.core import CoreModel, IDModelMixin
 
 
-class UserModel(IDModelMixin):
+class UserBase(CoreModel):
     created_at: datetime.datetime
     username: str
     email: str
+
+
+class UserModel(IDModelMixin, UserBase):
     password: str
     restoration_code: str | None
     restoration_expires_at: datetime.datetime | None
@@ -31,3 +34,7 @@ class CreateUserRequest(CoreModel):
 class LoginRequest(CoreModel):
     username: str
     password: str
+
+
+class PublicUser(UserBase):
+    pass

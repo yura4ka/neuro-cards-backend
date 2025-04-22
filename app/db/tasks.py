@@ -1,9 +1,7 @@
 from fastapi import FastAPI
 from databases import Database
 from app.core.config import settings
-import logging
-
-logger = logging.getLogger("uvicorn.error")
+from app.services import logger
 
 
 async def connect_to_db(app: FastAPI) -> None:

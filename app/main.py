@@ -1,9 +1,10 @@
+import logging
 from fastapi import FastAPI
 from app.api.routes import router as api_router
 from app.core import tasks
-import logging
+from app.services import logger
 
-logger = logging.getLogger("uvicorn.error")
+
 logger.setLevel(logging.DEBUG)
 
 app = FastAPI(title="NeuroCards")
