@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+import uuid
+from fastapi import HTTPException
 import jwt
 from passlib.context import CryptContext
 
@@ -9,8 +11,10 @@ from app.models.user import UserModel
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-class AuthException(BaseException):
-    pass
+class AuthException(HTTPException):
+    status_code = (401,)
+    detail = ([{"msg": "Could not validate token credentials."}],)
+    headers = {"WWW-Authenticate": "Bearer"}
 
 
 class AuthService:
@@ -24,10 +28,13 @@ class AuthService:
         self, *, user: UserModel, secret_key: str, expires_in_minutes: int
     ) -> TokenBase:
         exp = datetime.now(timezone.utc) + timedelta(minutes=expires_in_minutes)
+        id = uuid.uuid4()
         jwt_meta = JWTMeta(
             exp=exp,
+            sub=str(user.id),
+            jti=str(id),
         )
-        jwt_claims = JWTClaims(id=str(user.id))
+        jwt_claims = JWTClaims()
         token_payload = JWTPayload(
             **jwt_meta.model_dump(),
             **jwt_claims.model_dump(),
@@ -35,6 +42,7 @@ class AuthService:
 
         return TokenBase(
             token=jwt.encode(token_payload.model_dump(), secret_key, algorithm="HS256"),
+            id=id,
             expires_at=exp,
         )
 

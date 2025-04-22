@@ -2,12 +2,12 @@ from datetime import datetime, timezone
 from app.models.core import CoreModel, IDModelMixin
 
 
-class TokenBase(CoreModel):
+class TokenBase(IDModelMixin):
     token: str
     expires_at: datetime
 
 
-class RefreshTokenModel(IDModelMixin, TokenBase):
+class RefreshTokenModel(TokenBase):
     user_id: str
     is_invalid: bool
 
@@ -15,10 +15,12 @@ class RefreshTokenModel(IDModelMixin, TokenBase):
 class JWTMeta(CoreModel):
     iat: datetime = datetime.now(timezone.utc)
     exp: datetime
+    jti: str
+    sub: str
 
 
 class JWTClaims(CoreModel):
-    id: str
+    pass
 
 
 class JWTPayload(JWTMeta, JWTClaims):
@@ -30,3 +32,6 @@ class TokenResponse(CoreModel):
     refresh_token: str
     access_token_expires_at: datetime
     refresh_token_expires_at: datetime
+
+class ParsedToken(JWTPayload):
+    token_str: str
