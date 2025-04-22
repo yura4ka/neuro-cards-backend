@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 from passlib.context import CryptContext
 
@@ -23,7 +23,7 @@ class AuthService:
     def __create_jwt_token(
         self, *, user: UserModel, secret_key: str, expires_in_minutes: int
     ) -> TokenBase:
-        exp = datetime.now() + timedelta(minutes=expires_in_minutes)
+        exp = datetime.now(timezone.utc) + timedelta(minutes=expires_in_minutes)
         jwt_meta = JWTMeta(
             exp=exp,
         )
@@ -51,3 +51,13 @@ class AuthService:
             secret_key=settings.refresh_token,
             expires_in_minutes=settings.refresh_token_expire_minutes,
         )
+
+    def __decode_token(self, *, token: str, secret_key: str) -> JWTPayload:
+        decoded_token = jwt.decode(token, secret_key, algorithms=["HS256"], verify=True)
+        return JWTPayload(**decoded_token)
+
+    def decode_access_token(self, token: str) -> JWTPayload:
+        return self.__decode_token(token=token, secret_key=settings.access_token)
+
+    def decode_refresh_token(self, token: str) -> JWTPayload:
+        return self.__decode_token(token=token, secret_key=settings.refresh_token)

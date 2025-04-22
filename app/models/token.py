@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models.core import CoreModel, IDModelMixin
 
 
@@ -13,7 +13,7 @@ class RefreshTokenModel(IDModelMixin, TokenBase):
 
 
 class JWTMeta(CoreModel):
-    iat: datetime = datetime.now()
+    iat: datetime = datetime.now(timezone.utc)
     exp: datetime
 
 

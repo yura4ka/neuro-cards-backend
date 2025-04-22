@@ -10,6 +10,15 @@ class UserRepository(BaseRepository):
         super().__init__(db)
         self.auth_service = auth_service
 
+    async def get_user_by_id(self, id: str) -> UserModel | None:
+        user = await self.db.fetch_one(
+            "SELECT * FROM users WHERE id = :id",
+            values={"id": id},
+        )
+        if not user:
+            return None
+        return UserModel(**user)
+
     async def get_user_by_username(self, username: str) -> UserModel | None:
         user = await self.db.fetch_one(
             "SELECT * FROM users WHERE username = :username",
