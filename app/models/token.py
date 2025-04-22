@@ -13,12 +13,12 @@ class RefreshTokenModel(IDModelMixin, TokenBase):
 
 
 class JWTMeta(CoreModel):
-    iat: float = datetime.timestamp(datetime.now())
-    exp: float
+    iat: datetime = datetime.now()
+    exp: datetime
 
 
-class JWTClaims(IDModelMixin):
-    pass
+class JWTClaims(CoreModel):
+    id: str
 
 
 class JWTPayload(JWTMeta, JWTClaims):
@@ -28,5 +28,5 @@ class JWTPayload(JWTMeta, JWTClaims):
 class TokenResponse(CoreModel):
     access_token: str
     refresh_token: str
-    access_token_expires_at: float
-    refresh_token_expires_at: float
+    access_token_expires_at: datetime
+    refresh_token_expires_at: datetime

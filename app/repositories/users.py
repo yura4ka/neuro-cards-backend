@@ -3,7 +3,6 @@ from databases import Database
 from app.models.user import CreateUserRequest, LoginRequest, UserModel
 from app.repositories.base import BaseRepository
 from app.services import auth_service
-import sqlalchemy as sa
 
 
 class UserRepository(BaseRepository):
@@ -13,7 +12,8 @@ class UserRepository(BaseRepository):
 
     async def get_user_by_username(self, username: str) -> UserModel | None:
         user = await self.db.fetch_one(
-            sa.select(UserModel).where(UserModel.username == username)
+            "SELECT * FROM users WHERE username = :username",
+            values={"username": username},
         )
         if not user:
             return None

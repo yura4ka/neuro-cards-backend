@@ -37,7 +37,7 @@ async def login(
     access_token = auth_service.create_access_token(user=user)
     refresh_token = auth_service.create_refresh_token(user=user)
 
-    token_repository.add_refresh_token(token=refresh_token, user_id=user.id)
+    await token_repository.add_refresh_token(token=refresh_token, user_id=user.id)
 
     return TokenResponse(
         access_token=access_token.token,

@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 import jwt
-import jwt.algorithms
 from passlib.context import CryptContext
 
+from app.core.config import settings
 from app.models.token import JWTClaims, JWTMeta, JWTPayload, TokenBase
 from app.models.user import UserModel
 
@@ -23,11 +23,11 @@ class AuthService:
     def __create_jwt_token(
         self, *, user: UserModel, secret_key: str, expires_in_minutes: int
     ) -> TokenBase:
-        exp = datetime.timestamp(datetime.now() + timedelta(minutes=expires_in_minutes))
+        exp = datetime.now() + timedelta(minutes=expires_in_minutes)
         jwt_meta = JWTMeta(
             exp=exp,
         )
-        jwt_claims = JWTClaims(id=user.id)
+        jwt_claims = JWTClaims(id=str(user.id))
         token_payload = JWTPayload(
             **jwt_meta.model_dump(),
             **jwt_claims.model_dump(),
@@ -41,13 +41,13 @@ class AuthService:
     def create_access_token(self, *, user: UserModel) -> TokenBase:
         return self.__create_jwt_token(
             user=user,
-            secret_key=self.settings.access_token,
-            expires_in_minutes=self.settings.access_token_expire_minutes,
+            secret_key=settings.access_token,
+            expires_in_minutes=settings.access_token_expire_minutes,
         )
 
     def create_refresh_token(self, *, user: UserModel) -> TokenBase:
         return self.__create_jwt_token(
             user=user,
-            secret_key=self.settings.refresh_token,
-            expires_in_minutes=self.settings.refresh_token_expire_minutes,
+            secret_key=settings.refresh_token,
+            expires_in_minutes=settings.refresh_token_expire_minutes,
         )
