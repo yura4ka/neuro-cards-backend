@@ -4,6 +4,7 @@ from app.api.dependencies.repositories import (
     TokenRepositoryDependency,
     UserRepositoryDependency,
 )
+from app.models.core import StatusResponse
 from app.models.token import TokenResponse
 from app.models.user import LoginRequest
 from app.services import auth_service
@@ -57,3 +58,11 @@ async def refresh_tokens(
         access_token_expires_at=access_token.expires_at,
         refresh_token_expires_at=refresh_token.expires_at,
     )
+
+
+@router.post("/logout")
+async def logout(
+    token: RefreshTokenDependency, token_repository: TokenRepositoryDependency
+) -> StatusResponse:
+    await token_repository.invalidate_refresh_token(id=token.jti)
+    return StatusResponse(status="success")

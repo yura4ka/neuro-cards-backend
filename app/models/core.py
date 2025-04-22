@@ -8,3 +8,7 @@ class CoreModel(BaseModel):
 
 class IDModelMixin(BaseModel):
     id: uuid.UUID
+
+
+class StatusResponse(CoreModel):
+    status: str
