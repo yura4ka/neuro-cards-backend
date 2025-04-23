@@ -1,19 +1,28 @@
+import asyncio
 from datetime import datetime
+
+from databases import Database
 from app.core.utils import get_total_items, update_values_from_page
-from app.db.tables import (
-    cards_table,
-    decks_table,
-    question_options_table,
-    user_decks_table,
+from app.db.tables import decks_table, user_decks_table
+
+from app.models.card import (
+    CardPublic,
+    UserCardInfoBase,
+    UserCardInfoPublic,
 )
-from app.models.card import CardPublic, UserCardInfoBase, UserCardInfoPublic
 from app.models.core import TotalItems
-from app.models.deck import DeckCreateRequest, DeckPublic
+from app.models.deck import DeckCreateRequest, DeckPublic, DeckUpdateRequest
 from app.repositories.base import BaseRepository
 import sqlalchemy as sa
 
+from app.repositories.cards import CardRepository
+
 
 class DeckRepository(BaseRepository):
+    def __init__(self, db: Database) -> None:
+        super().__init__(db)
+        self.card_repository = CardRepository(db)
+
     async def create_deck(self, *, deck: DeckCreateRequest, user_id: str) -> str:
         async with self.db.transaction():
             result = await self.db.fetch_one(
@@ -29,33 +38,14 @@ class DeckRepository(BaseRepository):
                 )
             )
 
-            for card in deck.cards:
-                card_result = await self.db.fetch_one(
-                    cards_table.insert()
-                    .values(
-                        {
-                            "type": deck.type,
-                            "question": card.question,
-                            "difficulty": card.difficulty,
-                            "deck_id": result.id,
-                        }
-                    )
-                    .returning(cards_table.c.id),
+            await asyncio.create_task(
+                self.card_repository.add_cards_to_deck(
+                    connection=self.db.connection,
+                    deck_id=result.id,
+                    deck_type=deck.type,
+                    cards=deck.cards,
                 )
-                correct_answer_id: str | None = None
-                for i, option in enumerate(card.options):
-                    answer_result = await self.db.fetch_one(
-                        question_options_table.insert()
-                        .values({"card_id": card_result.id, "answer": option})
-                        .returning(question_options_table.c.id),
-                    )
-                    if card.correct_answer == i:
-                        correct_answer_id = answer_result.id
-                await self.db.execute(
-                    cards_table.update()
-                    .where(cards_table.c.id == card_result.id)
-                    .values({"correct_answer_id": correct_answer_id})
-                )
+            )
 
             return result.id
 
@@ -199,4 +189,62 @@ class DeckRepository(BaseRepository):
                 WHERE user_id = :user_id AND deck_id = :deck_id
                 """,
                 {"user_id": user_id, "deck_id": deck_id},
+            )
+
+    async def update_deck(
+        self, *, deck_id: str, user_id: str, deck: DeckUpdateRequest
+    ) -> None:
+        increase_version = deck.patch_cards or deck.deleted_cards
+        async with self.db.transaction():
+            deck_result = await self.db.execute(
+                f"""
+                UPDATE decks
+                SET title = :title
+                {", version = version + 1" if increase_version else ""}
+                WHERE id = :deck_id AND user_id = :user_id
+                RETURNING version, type
+                """,
+                {"title": deck.title, "deck_id": deck_id, "user_id": user_id},
+            )
+            if not increase_version:
+                return
+            migration_result = await self.db.fetch_one(
+                """
+                INSERT INTO deck_migrations (deck_id, version)
+                VALUES (:deck_id, :version)
+                RETURNING id
+                """,
+                {"deck_id": deck_id, "version": deck_result.version},
+            )
+            added_card_ids = await asyncio.create_task(
+                self.card_repository.add_cards_to_deck(
+                    connection=self.db.connection,
+                    deck_id=deck_id,
+                    deck_type=deck_result.type,
+                    cards=deck.new_cards,
+                )
+            )
+            await asyncio.create_task(
+                self.card_repository.mark_cards_as_deleted(
+                    connection=self.db.connection,
+                    cards_id=deck.deleted_cards,
+                    deck_id=deck_id,
+                )
+            )
+            await asyncio.create_task(
+                self.card_repository.update_cards(
+                    connection=self.db.connection,
+                    cards=deck.update_cards,
+                )
+            )
+            await asyncio.create_task(
+                self.card_repository.create_card_migrations(
+                    connection=self.db.connection,
+                    migration_id=migration_result.id,
+                    cards_id=[
+                        *added_card_ids,
+                        *[c.id for c in deck.update_cards],
+                        *deck.deleted_cards,
+                    ],
+                )
             )

@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from app.api.dependencies.auth import RequireAuthDependency
 from app.api.dependencies.repositories import DeckRepositoryDependency
 from app.models.card import CardPublic, UserCardInfoBase, UserCardInfoPublic
-from app.models.deck import DeckCreateRequest, DeckPublic
+from app.models.deck import DeckCreateRequest, DeckPublic, DeckUpdateRequest
 from app.models.core import (
     IDModelMixin,
     ResponseMeta,
@@ -85,4 +85,15 @@ async def update_card_info(
     await deck_repository.update_card_info(
         user_id=user_id, deck_id=deck_id, cards=cards
     )
+    return StatusResponse(status="success")
+
+
+@router.put("/{deck_id}")
+async def update_deck(
+    deck_id: UUID,
+    deck: DeckUpdateRequest,
+    user_id: RequireAuthDependency,
+    deck_repository: DeckRepositoryDependency,
+) -> StatusResponse:
+    await deck_repository.update_deck(deck_id=deck_id, user_id=user_id, deck=deck)
     return StatusResponse(status="success")

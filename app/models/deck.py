@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from app.models.card import CardBaseRequest
+from app.models.card import CardCreateRequest, CardUpdateRequest
 from app.models.core import CoreModel, DeckType, IDModelMixin
 
 
@@ -10,7 +10,7 @@ class DeckBase(CoreModel):
 
 
 class DeckCreateRequest(DeckBase):
-    cards: list[CardBaseRequest]
+    cards: list[CardCreateRequest]
 
 
 class DeckPublic(DeckBase, IDModelMixin):
@@ -18,3 +18,10 @@ class DeckPublic(DeckBase, IDModelMixin):
     updated_at: datetime | None
     version: int
     user_id: UUID
+
+
+class DeckUpdateRequest(CoreModel):
+    title: str
+    new_cards: list[CardCreateRequest]
+    update_cards: list[CardUpdateRequest]
+    deleted_cards: list[UUID]

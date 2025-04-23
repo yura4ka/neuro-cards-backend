@@ -5,11 +5,15 @@ from pydantic import Json
 from app.models.core import CoreModel, DeckType, IDModelMixin
 
 
-class CardBaseRequest(CoreModel):
+class CardCreateRequest(CoreModel):
     question: str
     options: list[str]
     correct_answer: int = 0
     difficulty: int = 0
+
+
+class CardUpdateRequest(CardCreateRequest, IDModelMixin):
+    pass
 
 
 class CardBase(CoreModel):
