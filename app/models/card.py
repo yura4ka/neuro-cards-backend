@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import Json
@@ -26,3 +27,19 @@ class CardPublic(CardBase, IDModelMixin):
     correct_answer_id: UUID
     options: list[QuestionOptionPublic] | Json[list[QuestionOptionPublic]]
     is_deleted: bool
+
+
+class UserCardInfoBase(CoreModel):
+    card_id: UUID
+    last_answered_at: datetime
+    repetition_number: int
+    easiness_factor: float
+    interval: float
+    is_learning: bool
+    learning_step: int
+
+
+class UserCardInfoPublic(UserCardInfoBase):
+    user_id: UUID
+    created_at: datetime
+    updated_at: datetime | None

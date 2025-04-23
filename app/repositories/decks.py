@@ -1,3 +1,4 @@
+from datetime import datetime
 from app.core.utils import get_total_items, update_values_from_page
 from app.db.tables import (
     cards_table,
@@ -5,7 +6,7 @@ from app.db.tables import (
     question_options_table,
     user_decks_table,
 )
-from app.models.card import CardPublic
+from app.models.card import CardPublic, UserCardInfoBase, UserCardInfoPublic
 from app.models.core import TotalItems
 from app.models.deck import DeckCreateRequest, DeckPublic
 from app.repositories.base import BaseRepository
@@ -142,3 +143,60 @@ class DeckRepository(BaseRepository):
             values={"from_version": from_version, "deck_id": deck_id},
         )
         return get_total_items(total=result.total)
+
+    async def get_deck_card_info(
+        self, *, user_id: str, deck_id: str, after_date: datetime
+    ) -> list[UserCardInfoPublic]:
+        result = await self.db.fetch_all(
+            """
+            SELECT uci.*,
+            FROM cards AS c
+            LEFT JOIN user_card_infos AS uci ON c.id = uci.card_id AND uci.user_id = :user_id
+            WHERE c.deck_id = :deck_id AND
+                (uci.updated_at >= :after_date OR uci.created_at >= :after_date)
+            """,
+            {
+                "user_id": user_id,
+                "deck_id": deck_id,
+                "after_date": after_date,
+            },
+        )
+        return [UserCardInfoPublic(**card) for card in result]
+
+    async def update_card_info(
+        self, *, user_id: str, deck_id: str, cards: list[UserCardInfoBase]
+    ) -> None:
+        async with self.db.transaction():
+            for card in cards:
+                await self.db.execute(
+                    """
+                    INSERT INTO user_card_infos (user_id, card_id, 
+                        last_answered_at, repetition_number, easiness_factor,
+                        interval, is_learning, learning_step
+                    )
+                    VALUES (:user_id, :card_id,
+                        :last_answered_at, :repetition_number, :easiness_factor,
+                        :interval, :is_learning, :learning_step
+                    )
+                    ON CONFLICT (card_id, user_id) DO UPDATE
+                    SET last_answered_at = :last_answered_at,
+                        repetition_number = :repetition_number,
+                        easiness_factor = :easiness_factor,
+                        interval = :interval,
+                        is_learning = :is_learning,
+                        learning_step = :learning_step
+                    """,
+                    {
+                        **card.model_dump(),
+                        "user_id": user_id,
+                    },
+                )
+
+            await self.db.execute(
+                """
+                UPDATE user_decks
+                SET updated_at = now()
+                WHERE user_id = :user_id AND deck_id = :deck_id
+                """,
+                {"user_id": user_id, "deck_id": deck_id},
+            )

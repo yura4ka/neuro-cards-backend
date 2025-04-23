@@ -1,10 +1,16 @@
+from datetime import datetime
 from uuid import UUID
 from fastapi import APIRouter
 from app.api.dependencies.auth import RequireAuthDependency
 from app.api.dependencies.repositories import DeckRepositoryDependency
-from app.models.card import CardPublic
+from app.models.card import CardPublic, UserCardInfoBase, UserCardInfoPublic
 from app.models.deck import DeckCreateRequest, DeckPublic
-from app.models.core import IDModelMixin, ResponseMeta, ResponseWithPagination
+from app.models.core import (
+    IDModelMixin,
+    ResponseMeta,
+    ResponseWithPagination,
+    StatusResponse,
+)
 
 
 router = APIRouter()
@@ -55,3 +61,28 @@ async def get_deck_cards(
     cards = await deck_repository.get_deck_cards(deck_id=deck_id, page=page)
     total = await deck_repository.get_total_cards(deck_id=deck_id)
     return ResponseWithPagination(items=cards, meta=ResponseMeta(**total.model_dump()))
+
+
+@router.get("/{deck_id}/card-info")
+async def get_deck_card_info(
+    deck_id: UUID,
+    after_date: datetime,
+    user_id: RequireAuthDependency,
+    deck_repository: DeckRepositoryDependency,
+) -> list[UserCardInfoPublic]:
+    return await deck_repository.get_deck_card_info(
+        user_id=user_id, deck_id=deck_id, after_date=after_date
+    )
+
+
+@router.put("/{deck_id}/card-info")
+async def update_card_info(
+    deck_id: UUID,
+    cards: list[UserCardInfoBase],
+    user_id: RequireAuthDependency,
+    deck_repository: DeckRepositoryDependency,
+) -> StatusResponse:
+    await deck_repository.update_card_info(
+        user_id=user_id, deck_id=deck_id, cards=cards
+    )
+    return StatusResponse(status="success")
