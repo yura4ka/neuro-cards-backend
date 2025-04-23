@@ -22,7 +22,7 @@ async def require_refresh_token(
 ) -> ParsedToken:
     try:
         decoded = auth_service.decode_refresh_token(token=token)
-        ParsedToken(**decoded.model_dump(), token_str=token)
+        return ParsedToken(**decoded.model_dump(), token_str=token)
     except Exception:
         raise AuthException
 

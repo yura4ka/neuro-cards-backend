@@ -12,9 +12,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthException(HTTPException):
-    status_code = (401,)
-    detail = ([{"msg": "Could not validate token credentials."}],)
-    headers = {"WWW-Authenticate": "Bearer"}
+    def __init__(self):
+        super().__init__(
+            status_code=401,
+            detail=[{"msg": "Could not validate token credentials."}],
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 class AuthService:

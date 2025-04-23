@@ -41,9 +41,7 @@ async def refresh_tokens(
     user_repository: UserRepositoryDependency,
     token_repository: TokenRepositoryDependency,
 ) -> TokenResponse:
-    is_token_valid = await token_repository.verify_refresh_token(
-        token, user_id=token.user_id
-    )
+    is_token_valid = await token_repository.verify_refresh_token(token)
     if not is_token_valid:
         token_repository.invalidate_all_tokens(user_id=token.sub)
         raise AuthException

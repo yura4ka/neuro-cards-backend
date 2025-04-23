@@ -12,24 +12,24 @@ class TokenRepository(BaseRepository):
             values={**token.model_dump(), "user_id": user_id},
         )
 
-    async def verify_refresh_token(self, *, token: ParsedToken) -> bool:
+    async def verify_refresh_token(self, token: ParsedToken) -> bool:
         result = await self.db.fetch_one(
             """
-            SELECT is_valid FROM tokens 
+            SELECT is_invalid FROM tokens 
             WHERE token = :token AND user_id = :user_id and id = :id
             """,
             values={"token": token.token_str, "user_id": token.sub, "id": token.jti},
         )
-        return bool(result) and result.is_valid
+        return bool(result) and not result.is_invalid
 
     async def invalidate_refresh_token(self, *, id: str) -> None:
         await self.db.execute(
-            "UPDATE tokens SET is_valid = false WHERE id = :id",
+            "UPDATE tokens SET is_invalid = true WHERE id = :id",
             values={"id": id},
         )
 
     async def invalidate_all_tokens(self, *, user_id: str) -> None:
         await self.db.execute(
-            "UPDATE tokens SET is_valid = false WHERE user_id = :user_id",
+            "UPDATE tokens SET is_invalid = true WHERE user_id = :user_id",
             values={"user_id": user_id},
         )
