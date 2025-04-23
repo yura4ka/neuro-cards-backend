@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 
-def create_user_table(metadata: sa.MetaData) -> sa.Table:
+def create_users_table(metadata: sa.MetaData) -> sa.Table:
     return sa.Table(
         "users",
         metadata,

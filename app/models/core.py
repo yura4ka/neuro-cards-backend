@@ -1,3 +1,4 @@
+from enum import Enum
 import uuid
 from pydantic import BaseModel
 
@@ -12,3 +13,8 @@ class IDModelMixin(BaseModel):
 
 class StatusResponse(CoreModel):
     status: str
+
+
+class DeckType(str, Enum):
+    Flashcards = "Flashcards"
+    Quiz = "Quiz"

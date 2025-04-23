@@ -127,6 +127,10 @@ def create_cards_table() -> None:
         ),
         sa.Column("question", sa.Text, nullable=False),
         sa.Column("difficulty", postgresql.SMALLINT, nullable=False),
+        sa.Column("correct_answer_id", postgresql.UUID(as_uuid=True)),
+        sa.Column(
+            "is_deleted", sa.Boolean, nullable=False, server_default=sa.text("FALSE")
+        ),
         sa.Column(
             "deck_id",
             postgresql.UUID(as_uuid=True),
@@ -148,9 +152,6 @@ def create_question_options_table() -> None:
             server_default=sa.text("gen_random_uuid()"),
         ),
         sa.Column("answer", sa.Text, nullable=False),
-        sa.Column(
-            "is_correct", sa.Boolean, nullable=False, server_default=sa.text("FALSE")
-        ),
         sa.Column(
             "card_id",
             postgresql.UUID(as_uuid=True),
@@ -203,9 +204,6 @@ def create_deck_migration_updates_table() -> None:
             sa.ForeignKey("deck_migrations.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        sa.Column(
-            "card_removed", sa.Boolean, nullable=False, server_default=sa.text("FALSE")
-        ),
         sa.PrimaryKeyConstraint("deck_migration_id", "card_id"),
         if_not_exists=True,
     )
@@ -232,6 +230,7 @@ def create_user_decks_table() -> None:
             nullable=False,
             server_default=sa.text("NOW()"),
         ),
+        sa.Column("updated_at", sa.TIMESTAMP(timezone=True)),
         sa.PrimaryKeyConstraint("user_id", "deck_id"),
         if_not_exists=True,
     )
@@ -252,6 +251,13 @@ def create_user_card_info_table() -> None:
             sa.ForeignKey("cards.id", ondelete="CASCADE"),
             nullable=False,
         ),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            nullable=False,
+            server_default=sa.text("NOW()"),
+        ),
+        sa.Column("updated_at", sa.TIMESTAMP(timezone=True)),
         sa.Column("last_answered_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("repetition_number", sa.Integer, nullable=False),
         sa.Column("easiness_factor", sa.REAL, nullable=False),
@@ -263,6 +269,7 @@ def create_user_card_info_table() -> None:
         sa.PrimaryKeyConstraint("user_id", "card_id"),
         if_not_exists=True,
     )
+    add_update_at_trigger("user_card_info")
 
 
 def create_tokens_table() -> None:
@@ -296,8 +303,17 @@ def upgrade() -> None:
 
     create_users_table()
     create_decks_table()
+
     create_cards_table()
     create_question_options_table()
+    op.create_foreign_key(
+        "cards_correct_answer_id_fkey",
+        "cards",
+        "question_options",
+        ["correct_answer_id"],
+        ["id"],
+    )
+
     create_deck_migrations_table()
     create_deck_migration_updates_table()
     create_user_decks_table()
