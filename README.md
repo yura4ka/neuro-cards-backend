@@ -7,6 +7,14 @@ Neuro cards - is the app made for my bachelor degree final thesis with the follo
 - Users can upload a PDF/word/plain text and an AI model will generate a set of flashcards based on it.
 - Offline first approach
 
+### How to run
+
+dev mode:
+`fastapi dev ./app/main.py`
+
+production mode:
+`fastapi run ./app/main.py`
+
 ### Technologies used
 
 > TBD

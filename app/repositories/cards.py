@@ -50,7 +50,7 @@ class CardRepository(BaseRepository):
             await asyncio.create_task(
                 self.add_question_options(
                     connection=connection,
-                    card=CardUpdateRequest(**card, id=card_result.id),
+                    card=CardUpdateRequest(id=card_result.id, **card.model_dump()),
                 )
             )
 

@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 
 from databases import Database
+from fastapi import HTTPException
 from app.core.utils import get_total_items, update_values_from_page
 from app.db.tables import decks_table, user_decks_table
 
@@ -11,7 +12,12 @@ from app.models.card import (
     UserCardInfoPublic,
 )
 from app.models.core import TotalItems
-from app.models.deck import DeckCreateRequest, DeckPublic, DeckUpdateRequest
+from app.models.deck import (
+    DeckCreateRequest,
+    DeckPublic,
+    DeckUpdateRequest,
+    DeckWithCards,
+)
 from app.repositories.base import BaseRepository
 import sqlalchemy as sa
 
@@ -22,6 +28,13 @@ class DeckRepository(BaseRepository):
     def __init__(self, db: Database) -> None:
         super().__init__(db)
         self.card_repository = CardRepository(db)
+
+    async def get_deck_by_id(self, *, deck_id: str, user_id: str) -> DeckWithCards:
+        deck = await self.get_user_decks(user_id=user_id, deck_id=deck_id)
+        if (not deck) or len(deck) != 1:
+            raise HTTPException(status_code=404, detail=[{"msg": "Not found"}])
+        cards = await self.get_deck_cards(deck_id=deck_id)
+        return DeckWithCards(cards=cards, **deck[0].model_dump())
 
     async def create_deck(self, *, deck: DeckCreateRequest, user_id: str) -> str:
         async with self.db.transaction():
@@ -40,7 +53,7 @@ class DeckRepository(BaseRepository):
 
             await asyncio.create_task(
                 self.card_repository.add_cards_to_deck(
-                    connection=self.db.connection,
+                    connection=self.db.connection(),
                     deck_id=result.id,
                     deck_type=deck.type,
                     cards=deck.cards,
@@ -55,8 +68,10 @@ class DeckRepository(BaseRepository):
         )
         return [DeckPublic(**deck) for deck in result]
 
-    async def get_user_decks(self, *, user_id: str) -> list[DeckPublic]:
-        result = await self.db.fetch_all(
+    async def get_user_decks(
+        self, *, user_id: str, deck_id: str | None
+    ) -> list[DeckPublic]:
+        stmt = (
             sa.select(
                 user_decks_table.c["created_at", "updated_at"],
                 decks_table.c["id", "title", "type", "version", "user_id"],
@@ -64,10 +79,13 @@ class DeckRepository(BaseRepository):
             .join(decks_table, decks_table.c.id == user_decks_table.c.deck_id)
             .where(user_decks_table.c.user_id == user_id)
         )
+        if deck_id is not None:
+            stmt = stmt.where(decks_table.c.id == deck_id)
+        result = await self.db.fetch_all(stmt)
         return [DeckPublic(**deck) for deck in result]
 
     async def get_deck_cards(
-        self, *, deck_id: str, page: int | None
+        self, *, deck_id: str, page: int | None = None
     ) -> list[CardPublic]:
         result = await self.db.fetch_all(
             f"""

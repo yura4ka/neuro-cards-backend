@@ -4,9 +4,13 @@ from fastapi import APIRouter
 from app.api.dependencies.auth import RequireAuthDependency
 from app.api.dependencies.repositories import DeckRepositoryDependency
 from app.models.card import CardPublic, UserCardInfoBase, UserCardInfoPublic
-from app.models.deck import DeckCreateRequest, DeckPublic, DeckUpdateRequest
+from app.models.deck import (
+    DeckCreateRequest,
+    DeckPublic,
+    DeckUpdateRequest,
+    DeckWithCards,
+)
 from app.models.core import (
-    IDModelMixin,
     ResponseMeta,
     ResponseWithPagination,
     StatusResponse,
@@ -21,9 +25,9 @@ async def create_deck(
     new_deck: DeckCreateRequest,
     user_id: RequireAuthDependency,
     deck_repository: DeckRepositoryDependency,
-) -> IDModelMixin:
+) -> DeckWithCards:
     id = await deck_repository.create_deck(deck=new_deck, user_id=user_id)
-    return {"id": id}
+    return await deck_repository.get_deck_by_id(deck_id=id, user_id=user_id)
 
 
 @router.get("/")
