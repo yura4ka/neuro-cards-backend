@@ -69,7 +69,7 @@ class DeckRepository(BaseRepository):
         return [DeckPublic(**deck) for deck in result]
 
     async def get_user_decks(
-        self, *, user_id: str, deck_id: str | None
+        self, *, user_id: str, deck_id: str | None = None
     ) -> list[DeckPublic]:
         stmt = (
             sa.select(
@@ -157,7 +157,7 @@ class DeckRepository(BaseRepository):
     ) -> list[UserCardInfoPublic]:
         result = await self.db.fetch_all(
             """
-            SELECT uci.*,
+            SELECT uci.*
             FROM cards AS c
             LEFT JOIN user_card_infos AS uci ON c.id = uci.card_id AND uci.user_id = :user_id
             WHERE c.deck_id = :deck_id AND
