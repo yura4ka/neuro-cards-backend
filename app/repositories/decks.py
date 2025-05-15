@@ -178,7 +178,7 @@ class DeckRepository(BaseRepository):
             for card in cards:
                 await self.db.execute(
                     """
-                    INSERT INTO user_card_infos (user_id, card_id, 
+                    INSERT INTO user_card_info (user_id, card_id, 
                         last_answered_at, repetition_number, easiness_factor,
                         interval, is_learning, learning_step
                     )
@@ -236,7 +236,7 @@ class DeckRepository(BaseRepository):
             )
             added_card_ids = await asyncio.create_task(
                 self.card_repository.add_cards_to_deck(
-                    connection=self.db.connection,
+                    connection=self.db.connection(),
                     deck_id=deck_id,
                     deck_type=deck_result.type,
                     cards=deck.new_cards,
@@ -244,20 +244,20 @@ class DeckRepository(BaseRepository):
             )
             await asyncio.create_task(
                 self.card_repository.mark_cards_as_deleted(
-                    connection=self.db.connection,
+                    connection=self.db.connection(),
                     cards_id=deck.deleted_cards,
                     deck_id=deck_id,
                 )
             )
             await asyncio.create_task(
                 self.card_repository.update_cards(
-                    connection=self.db.connection,
+                    connection=self.db.connection(),
                     cards=deck.update_cards,
                 )
             )
             await asyncio.create_task(
                 self.card_repository.create_card_migrations(
-                    connection=self.db.connection,
+                    connection=self.db.connection(),
                     migration_id=migration_result.id,
                     cards_id=[
                         *added_card_ids,
