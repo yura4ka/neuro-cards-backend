@@ -159,7 +159,7 @@ class DeckRepository(BaseRepository):
             """
             SELECT uci.*
             FROM cards AS c
-            LEFT JOIN user_card_infos AS uci ON c.id = uci.card_id AND uci.user_id = :user_id
+            LEFT JOIN user_card_info AS uci ON c.id = uci.card_id AND uci.user_id = :user_id
             WHERE c.deck_id = :deck_id AND
                 (uci.updated_at >= :after_date OR uci.created_at >= :after_date)
             """,
